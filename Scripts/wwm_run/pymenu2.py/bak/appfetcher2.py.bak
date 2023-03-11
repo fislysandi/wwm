@@ -1,0 +1,63 @@
+import winreg
+import os
+
+# Open the registry key that contains the list of installed applications
+key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
+
+# Get the number of subkeys (i.e., installed applications) in the registry key
+num_subkeys = winreg.QueryInfoKey(key)[0]
+
+# Create a new text file to store the application information
+with open('installed_apps.txt', 'w') as f:
+
+    # Loop through each installed application in the registry key
+    for i in range(num_subkeys):
+        subkey_name = winreg.EnumKey(key, i)
+        subkey = winreg.OpenKey(key, subkey_name)
+
+        # Try to get the display name of the application
+        try:
+            display_name = winreg.QueryValueEx(subkey, 'DisplayName')[0]
+        except:
+            display_name = "Unknown"
+
+        # Try to get the installation location of the application
+        try:
+            install_location = winreg.QueryValueEx(subkey, 'InstallLocation')[0]
+        except:
+            install_location = "Unknown"
+
+        # Try to get the path to the application's icon
+        try:
+            icon_path = winreg.QueryValueEx(subkey, 'DisplayIcon')[0]
+        except:
+            icon_path = "Unknown"
+
+        # Write the application information to the text file
+        f.write(f'{display_name}\n')
+        f.write(f'    Location: {install_location}\n')
+        f.write(f'    Icon: {icon_path}\n\n')
+
+        # Close the registry subkey
+        winreg.CloseKey(subkey)
+
+    # Loop through each directory in the system's $PATH environment variable
+    for path in os.environ['PATH'].split(os.pathsep):
+
+        # Try to list the files in the directory
+        try:
+            filenames = os.listdir(path)
+        except:
+            continue  # Skip this directory if it's not accessible
+
+        # Loop through each file in the directory
+        for filename in filenames:
+
+            # If the file is an executable, write its path to the text file
+            full_path = os.path.join(path, filename)
+            if os.access(full_path, os.X_OK):
+                f.write(f'{filename}\n')
+                f.write(f'    Location: {path}\n\n')
+                
+# Close the registry key
+winreg.CloseKey(key)

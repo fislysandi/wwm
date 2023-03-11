@@ -1,0 +1,71 @@
+import tkinter as tk
+import win32con
+import sys 
+import os
+
+class Dmenu:
+    def __init__(self, parent):
+        self.parent = parent
+        self.parent.title("Dmenu Clone")
+
+        self.entry = tk.Entry(parent, font=("Courier", 12))
+        self.entry.pack(fill="x")
+
+        self.listbox = tk.Listbox(parent, font=("Courier", 12))
+        self.listbox.pack(fill="both", expand=True)
+
+        self.apps = self.get_installed_apps()
+        self.scripts = self.get_scripts()
+
+        self.populate_listbox(self.apps)
+        self.populate_listbox(self.scripts)
+
+        self.entry.bind("<KeyRelease>", self.filter_listbox)
+
+    def get_installed_apps(self):
+        apps = []
+        reg_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
+        for key in win32con.HKEY_LOCAL_MACHINE, win32con.HKEY_CURRENT_USER:
+            try:
+                with win32api.RegOpenKeyEx(key, reg_path, 0, win32con.KEY_READ) as reg_key:
+                    subkeys, values, last_modified = win32api.RegQueryInfoKey(reg_key)
+                    for i in range(subkeys):
+                        subkey = win32api.RegEnumKey(reg_key, i)
+                        with win32api.RegOpenKeyEx(reg_key, subkey, 0, win32con.KEY_READ) as app_key:
+                            path = win32api.RegQueryValueEx(app_key, "")[0]
+                            if path.endswith(".exe"):
+                                name = win32api.RegQueryValueEx(app_key, "FriendlyAppName")[0]
+                                apps.append((name, path))
+            except:
+                pass
+        return apps
+
+    def get_scripts(self):
+        pyrunner_dir = sys.path[0] + "/pyrunnerscripts"
+        scripts = []
+        try:
+            with os.scandir(pyrunner_dir) as entries:
+                for entry in entries:
+                    if entry.is_file() and entry.name.endswith(".py"):
+                        name = os.path.splitext(entry.name)[0]
+                        path = os.path.abspath(entry.path)
+                        scripts.append((name, path))
+        except FileNotFoundError:
+            pass
+        return scripts
+
+    def populate_listbox(self, items):
+        for item in items:
+            self.listbox.insert("end", item[0])
+
+    def filter_listbox(self, event):
+        pattern = self.entry.get()
+        self.listbox.delete(0, "end")
+        items = [item for item in self.apps + self.scripts if pattern.lower() in item[0].lower()]
+        self.populate_listbox(items)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    dmenu = Dmenu(root)
+    root.mainloop()

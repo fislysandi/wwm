@@ -1,0 +1,37 @@
+import sys
+import ctypes
+import tkinter as tk
+
+def create_notification(msg, font, color, text_color, timeout):
+    root = tk.Tk()
+    root.withdraw()
+    root.overrideredirect(True)
+    root.attributes("-topmost", True)
+
+    label = tk.Label(root, text=msg, font=(font, 12), bg=color, fg=text_color, padx=10, pady=5)
+    label.pack()
+
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    root.geometry("+{}+{}".format(screen_width // 2, screen_height - 100))
+
+    root.after(int(float(timeout) * 1000), root.destroy)
+    root.mainloop()
+
+def get_current_virtual_desktop():
+    desktops = ctypes.windll.user32.GetDesktopWindow()
+    current_desktop = ctypes.windll.user32.GetWindowTextW(desktops)
+    return current_desktop
+
+if __name__ == "__main__":
+    msg = sys.argv[1]
+    font = sys.argv[2]
+    color = sys.argv[3]
+    text_color = sys.argv[4]
+    timeout = sys.argv[5]
+
+    if msg == "":
+        msg = "Current virtual desktop: {}".format(get_current_virtual_desktop())
+
+    create_notification(msg, font, color, text_color, timeout)

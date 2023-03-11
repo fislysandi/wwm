@@ -1,0 +1,13 @@
+ctypes
+win32con
+subprocess
+pycaw
+tkinter
+tkinter.font
+winreg
+sys
+win32api
+os
+ast
+win32gui
+comtypes
